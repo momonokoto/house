@@ -1,0 +1,77 @@
+a
+{
+
+	text-decoration: none;
+}
+#top{
+    /* background-color: aqua; */
+    height: 60px;
+    text-align: center;
+    line-height: 60px;
+    background-color: #f4f3f3;
+
+}
+
+.top-block
+{
+    /* background-color: aquamarine; */
+    width: 120px;
+    float: left;
+    transition: .3s;
+    font-size: 10px;
+    color: black;
+}
+
+#logo
+{
+    background-image: url("/src/img/logo.png");
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+
+.top-block:hover{
+    background-color: #d0eaff;
+    
+}
+
+#login-view{
+    /* background-color: aqua; */
+    width: 700px;
+    height: 400px;
+    text-align: center;
+    margin: auto;
+    margin-top: 60px;
+    border-radius: 20px;
+    background-color: rgba(200,200,200,0.5);
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.1);
+}
+.login-view-top
+{
+    /* background-color: aqua; */
+    text-align: center;
+    height: 60px;
+    line-height: 60px;
+    margin-bottom: 30px;
+    font-size: 25px;
+    text-align: left;
+    margin-left: 20px;
+    color: rgb(206, 5, 5);
+}
+#login-view-1{
+    /* background-color: green; */
+    padding-top: 10px;
+    width: 350px;
+    height: 400px;
+    float: left;
+    margin: auto;
+
+}
+#login-view-2{
+    /* background-color: red; */
+    padding-top: 10px;
+    width: 350px;
+    height: 400px;
+    float: left;
+    margin: auto;
+
+}
