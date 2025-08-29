@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket 聊天</title>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --success-color: #4cc9f0;
+      --danger-color: #f72585;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+ body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background-color: #f0f2f5;
+  margin: 0;
+  padding: 20px;
+  color: #303133;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: #409EFF; /* Element UI 主色 */
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  padding: 15px 24px;
+  text-align: center;
+}
+
+.login-area {
+  max-width: 400px;
+  margin: 40px auto;
+  background-color: #fff;
+  padding: 30px 24px;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+}
+
+.login-title {
+  color: #409EFF;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  height: 36px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #606266;
+  background-color: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  box-sizing: border-box;
+  transition: border-color .3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: #409EFF;
+  box-shadow: 0 0 2px rgba(64,158,255,0.3);
+}
+
+button {
+  width: 100%;
+  height: 36px;
+  background-color: #409EFF;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color .3s ease;
+}
+
+button:hover {
+  background-color: #66b1ff;
+}
+
+button:disabled {
+  background-color: #a0cfff;
+  cursor: not-allowed;
+}
+
+.main-content {
+  display: flex;
+  height: 520px;
+  border-top: 1px solid #ebeef5;
+  background-color: #fff;
+}
+
+.sidebar {
+  width: 260px;
+  border-right: 1px solid #ebeef5;
+  background-color: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-area {
+  padding: 12px 15px;
+  border-bottom: 1px solid #ebeef5;
+  background-color: #fff;
+  display: flex;
+  gap: 10px;
+}
+
+.input-area input[type="text"] {
+  flex-grow: 1;
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  box-sizing: border-box;
+  transition: border-color .3s ease;
+}
+
+.input-area input[type="text"]:focus {
+  border-color: #409EFF;
+  box-shadow: 0 0 2px rgba(64,158,255,0.3);
+}
+
+.contact-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background-color: #f5f7fa;
+}
+
+.contact-item {
+  background-color: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color .3s ease;
+}
+
+.contact-item:hover {
+  background-color: #ecf5ff;
+}
+
+.contact-item.active {
+  background-color: #409EFF;
+  color: #fff;
+}
+
+.unread-badge {
+  background-color: #f56c6c;
+  color: white;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.delete-btn {
+  background-color: #f56c6c;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.contact-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.chat-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+}
+
+.message-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background-color: #f9fafc;
+}
+
+.message {
+  max-width: 65%;
+  padding: 10px 16px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.message.sent {
+  background-color: #409EFF;
+  color: white;
+  align-self: flex-end;
+}
+
+.message.received {
+  background-color: #fff;
+  border: 1px solid #ebeef5;
+  align-self: flex-start;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.status-bar {
+  background-color: #f5f7fa;
+  border-top: 1px solid #ebeef5;
+  padding: 10px;
+  font-size: 13px;
+  color: #909399;
+  text-align: center;
+}
+
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">即时通讯-小众租房平台</div>
+  
+  <div class="login-area" id="loginSection">
+    <h2 class="login-title">用户登录</h2>
+    <div class="form-group">
+      <input type="text" id="usernameInput" placeholder="用户名" />
+    </div>
+    <div class="form-group">
+      <input type="password" id="passwordInput" placeholder="密码" />
+    </div>
+    <button onclick="login()">登录</button>
+  </div>
+  
+  <div id="chatSection" style="display:none">
+    <div class="main-content">
+      <div class="sidebar">
+        <div class="input-area">
+          <input type="text" id="newContactInput" placeholder="输入新联系人用户名" />
+          <button onclick="addContact()">添加</button>
+        </div>
+        <div class="contact-list" id="contactList"></div>
+      </div>
+      
+      <div class="chat-area">
+        <div class="message-area" id="messages"></div>
+        <div class="input-area">
+          <input type="text" id="messageInput" placeholder="输入消息内容..." />
+          <button onclick="sendTestMessage()">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="status-bar">
+
+  </div>
+</div>
+
+<script>
+  let stompClient = null;
+  let currentToken = null;
+  let currentContact = null;
+  let currentUser = null;
+  let recentContacts = new Map();
+  let privateSubscription = null; 
+  let adminSubscription = null;
+  let heartbeatInterval = null; // 新增：心跳定时器
+
+  const urlParams = new URLSearchParams(window.location.search)
+
+  // 取出 token 和 userName
+  const token = urlParams.get('token')
+  const userName = urlParams.get('userName')
+
+  console.log('token:', token)
+  console.log('userName:', userName)
+
+  function getUserInfoFromToken(token) {
+    try {
+      console.log('token:', token);
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('payload:', payload.role);
+      return {
+        username: payload.sub || 'unknown',
+        role: payload.role || []
+      };
+    } catch (e) {
+      console.error('Token解析失败:', e);
+      return { username: 'unknown', role: [] };
+    }
+  }
+
+  function login() {
+    const username = document.getElementById('usernameInput').value;
+    const password = document.getElementById('passwordInput').value;
+
+    if (!username || !password) {
+      alert('请输入用户名和密码');
+      return;
+    }
+
+    fetch('/api/user/websocket/authbypassword', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password,
+        token: token
+      })
+    }).then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error('登录失败');
+    }).then(data => {
+      if (data.accessToken) {
+        currentToken = data.accessToken;
+        
+        // 解析token并设置当前用户
+        const userInfo = getUserInfoFromToken(currentToken);
+        currentUser = userInfo.username;
+        
+        recentContacts = new Map();
+        if (data.recentMessages) {
+          try {
+            if (data.recentMessages instanceof Array) {
+              data.recentMessages.forEach(msg => {
+                if (!recentContacts.has(msg.sender)) {
+                  recentContacts.set(msg.sender, []);
+                }
+                msg.read = true;
+                recentContacts.get(msg.sender).push(msg);
+              });
+            } else {
+              Object.entries(data.recentMessages).forEach(([contact, messages]) => {
+                recentContacts.set(contact, Array.isArray(messages) ? messages.map(msg => {
+                  msg.read = true;
+                  return msg;
+                }) : []);
+              });
+            }
+          } catch (e) {
+            console.error('消息数据解析失败:', e);
+          }
+        }
+        renderContactList();
+
+        showMessage(`登录成功：欢迎 ${userInfo.username}`);
+        
+        // 显示聊天区域，隐藏登录区域
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('chatSection').style.display = 'block';
+        
+        // 登录成功后自动连接WebSocket
+        connect();
+      } else {
+        throw new Error('响应中未包含accessToken');
+      }
+    }).catch(error => {
+      showMessage('登录失败: ' + error.message);
+    });
+  }
+
+  function renderContactList() {
+    const contactList = document.getElementById('contactList');
+    contactList.innerHTML = '';
+
+    Array.from(recentContacts.entries()).forEach(([contact, messages]) => {
+      const contactItem = document.createElement('div');
+      contactItem.className = 'contact-item';
+      contactItem.draggable = true;
+      
+      // 修改后的拖拽事件处理
+      contactItem.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', contact);
+        contactItem.classList.add('dragging');
+        e.stopPropagation(); // 阻止事件冒泡
+      });
+      
+      contactItem.addEventListener('dragend', (e) => {
+        contactItem.classList.remove('dragging');
+        e.stopPropagation(); // 阻止事件冒泡
+      });
+
+      // 添加点击事件处理（保持不变）
+      contactItem.addEventListener('click', () => {
+        currentContact = contact;
+        showContactMessages(contact);
+        renderContactList(); // 重新渲染以更新已读状态
+      });
+
+      // 联系人名称和未读消息
+      const contactContainer = document.createElement('div');
+      const contactName = document.createElement('span');
+      contactName.textContent = contact;
+      
+      const unreadCount = messages.filter(msg => !msg.read).length;
+      let unreadBadge = '';
+      if (unreadCount > 0 && currentContact !== contact) {
+        unreadBadge = `<span class="unread-badge">${unreadCount}</span>`;
+      }
+      
+      contactContainer.innerHTML = `
+        <span>${contactName.textContent}</span>
+        ${unreadBadge}
+      `;
+      
+      // 删除按钮
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.textContent = '删除';
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`确定要删除联系人 ${contact} 吗?`)) {
+          deleteContact(contact);
+        }
+      };
+
+      contactItem.appendChild(contactContainer);
+      contactItem.appendChild(deleteBtn);
+
+      contactList.appendChild(contactItem);
+    });
+  }
+
+  function loadRecentMessages(contact) {
+    if (!currentToken) {
+        alert('请先登录');
+        return;
+    }
+
+    // 获取该联系人第一条消息的ID(如果有)
+    const oldestMessageId = recentContacts.get(contact)?.length > 0 
+        ? recentContacts.get(contact)[0].id 
+        : null;
+
+    fetch(`/api/messages/history/recent-private?otherUser=${encodeURIComponent(contact)}${oldestMessageId ? `&oldestMessageId=${oldestMessageId}` : ''}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + currentToken
+        }
+    }).then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('获取消息失败');
+    }).then(messages => {
+        if (messages && messages.length > 0) {
+            const newRecentContacts = new Map(recentContacts);
+            const existingMessages = newRecentContacts.get(contact) || [];
+            
+            // 合并消息并去重，将新获取的历史消息放在前面
+            const mergedMessages = [...messages, ...existingMessages].reduce((acc, msg) => {
+                if (!acc.some(m => m.id === msg.id)) {
+                    acc.push(msg);
+                }
+                return acc;
+            }, []);
+            
+            // 按时间排序
+            mergedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            newRecentContacts.set(contact, mergedMessages);
+            recentContacts = newRecentContacts;
+            
+            if (currentContact === contact) {
+                showContactMessages(contact);
+            }
+            renderContactList();
+        }
+    }).catch(error => {
+        showMessage(`获取消息失败: ${error.message}`);
+    });
+}
+
+  function showContactMessages(contact) {
+    loadRecentMessages(contact);
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = '';
+
+    if (recentContacts.has(contact)) {
+      // 使用更可靠的排序方式
+      const messages = [...recentContacts.get(contact)].sort((a, b) => 
+        new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
+      );
+    
+      messages.forEach(msg => {
+        // 添加更健壮的空值检查
+        if (!msg || !msg.sender || !msg.content) {
+          console.error('无效消息对象:', msg);
+          return;
+        }
+        
+        msg.read = true;
+        // 处理时间戳格式
+        const dateStr = msg.timestamp 
+          ? new Date(msg.timestamp).toLocaleTimeString() 
+          : "未知时间";
+      
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${msg.sender === currentUser ? 'sent' : 'received'}`;
+      
+        messageElement.innerHTML = `
+          <div>${msg.content}</div>
+          <div class="message-time">${dateStr}</div>
+        `;
+      
+        messagesDiv.appendChild(messageElement);
+      });
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    } else {
+      console.log('联系人不存在:', contact);
+    }
+  }
+
+  function connect() {
+    if (!currentToken) {
+      alert('请先登录获取Token');
+      return;
+    }
+
+    if (typeof Stomp === 'undefined') {
+      showMessage('错误：STOMP库未加载，请检查网络连接或刷新页面');
+      return;
+    }
+
+    // 如果已连接，则直接返回
+    if (stompClient && stompClient.connected) {
+      showMessage('WebSocket已连接');
+      return;
+    }
+
+    const userInfo = getUserInfoFromToken(currentToken);
+    const username = userInfo.username;
+
+    const socket = new WebSocket("ws://www.xzzf.xyz:8080/ws?token=" + encodeURIComponent(currentToken));
+    stompClient = Stomp.over(socket);
+
+    const connectTimeout = setTimeout(() => {
+      showMessage('连接超时，请检查网络或服务状态');
+      if (stompClient) {
+        stompClient.disconnect();
+      }
+    }, 5000);
+
+    stompClient.connect({
+      'Authorization': 'Bearer ' + currentToken
+    }, function(frame) {
+      clearTimeout(connectTimeout);
+      showMessage('WebSocket连接成功');
+
+      // 启动心跳机制
+      startHeartbeat();
+
+      // 取消已有订阅
+      if (privateSubscription) {
+        privateSubscription.unsubscribe();
+        privateSubscription = null;
+      }
+      if (adminSubscription) {
+        adminSubscription.unsubscribe();
+        adminSubscription = null;
+      }
+
+      // 创建新的订阅
+      privateSubscription = stompClient.subscribe('/user/queue/private', function(message) {
+        const msg = JSON.parse(message.body);
+        console.log('收到私信:', msg);  // 添加调试日志
+        
+        // 确保使用新Map更新状态（不可变更新）
+        const newRecentContacts = new Map(recentContacts);
+        
+        // 添加空值检查
+        if (!msg.sender || !msg.content) {
+          console.error('无效消息格式:', msg);
+          return;
+        }
+
+        // 如果联系人不存在，则初始化一个空数组
+        if (!newRecentContacts.has(msg.sender)) {
+          newRecentContacts.set(msg.sender, []);
+        }
+
+        // 获取原消息数组并创建新数组（不可变更新）
+        const originalMessages = newRecentContacts.get(msg.sender);
+        const newMessages = [...originalMessages]; // 创建副本
+        // 添加新消息，并设置read状态
+        const newMsg = { ...msg, read: currentContact === msg.sender };
+        newMessages.push(newMsg);
+        // 按时间戳升序排序（从早到晚）
+        newMessages.sort((a, b) => 
+          new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
+        );
+        // 更新Map中该联系人的消息数组
+        newRecentContacts.set(msg.sender, newMessages);
+
+        // 更新联系人排序：根据每个联系人的最后一条消息的时间戳降序排序
+        const sortedContacts = new Map([...newRecentContacts].sort((a, b) => {
+          // 取每个联系人消息数组的最后一条消息（因为数组已按时间升序，所以最后一条是最新的）
+          const lastMsgA = a[1].length > 0 ? a[1][a[1].length - 1].timestamp : 0;
+          const lastMsgB = b[1].length > 0 ? b[1][b[1].length - 1].timestamp : 0;
+          return new Date(lastMsgB || 0) - new Date(lastMsgA || 0);
+        }));
+
+        recentContacts = sortedContacts;
+        // 添加调试日志
+        console.log('更新后的recentContacts:', recentContacts);
+        renderContactList();
+
+        // 确保视图更新
+        if (currentContact === msg.sender) {
+          showContactMessages(msg.sender);
+        } else {
+          showMessage(`收到来自 ${msg.sender} 的新消息`);
+        }
+      });
+      console.log(userInfo);
+      if (userInfo.role.includes('ADMIN')) {
+        adminSubscription = stompClient.subscribe('/topic/admin', function(message) {
+          const adminMsg = JSON.parse(message.body);
+          
+          // 新增：将系统消息加入联系人列表
+          const systemContact = "系统通知";
+          const newRecentContacts = new Map(recentContacts);
+          
+          if (!newRecentContacts.has(systemContact)) {
+            newRecentContacts.set(systemContact, []);
+          }
+          
+          const newMsg = {
+            sender: systemContact,
+            receiver: currentUser,
+            content: adminMsg.content,
+            timestamp: new Date().toISOString(),
+            read: false
+          };
+          
+          newRecentContacts.get(systemContact).push(newMsg);
+          recentContacts = newRecentContacts;
+          renderContactList();
+          
+          showMessage(`[系统通知] ${adminMsg.content}`);
+        });
+        showMessage(`已订阅管理员频道，欢迎管理员 ${username}`);
+      }
+    }, function(error) {
+      clearTimeout(connectTimeout);
+      stopHeartbeat(); // 停止心跳
+      showMessage('WebSocket连接失败: ' + error);
+      console.error('WebSocket连接错误:', error);
+      privateSubscription = null;
+      adminSubscription = null;
+    });
+  }
+
+  // 新增：启动心跳
+  function startHeartbeat() {
+    // 清除现有定时器
+    stopHeartbeat();
+    
+    // 每30秒发送一次心跳
+    heartbeatInterval = setInterval(() => {
+      if (stompClient && stompClient.connected) {
+        stompClient.send('/app/heartbeat', {}, JSON.stringify({
+          timestamp: new Date().toISOString(),
+          user: currentUser
+        }));
+      }
+    }, 30000); // 30秒间隔
+  }
+
+  // 新增：停止心跳
+  function stopHeartbeat() {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+  }
+
+  // 在断开连接时也应停止心跳
+  window.addEventListener('beforeunload', () => {
+    stopHeartbeat();
+    if (stompClient && stompClient.connected) {
+      stompClient.disconnect();
+    }
+  });
+
+  function sendTestMessage() {
+    if (!currentToken) {
+      alert('请先登录获取Token');
+      return;
+    }
+
+    if (!currentContact) {
+      alert('请先选择联系人');
+      return;
+    }
+
+    const currentUser = getUserInfoFromToken(currentToken).username;
+
+
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value;
+
+    if (!message) {
+      alert('请输入消息内容');
+      return;
+    }
+
+    const newMsg = {
+      sender: currentUser,
+      receiver: currentContact,
+      content: message,
+      timestamp: new Date().toISOString(),
+      read: true
+    };
+
+    // 创建新Map确保数据一致性
+    const newRecentContacts = new Map(recentContacts);
+
+    // 仅更新接收方的联系人列表
+    if (!newRecentContacts.has(currentContact)) {
+      newRecentContacts.set(currentContact, []);
+    }
+    newRecentContacts.get(currentContact).push(newMsg);
+
+    recentContacts = newRecentContacts;
+    renderContactList();
+    showContactMessages(currentContact);
+
+    fetch('/api/messages/private', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + currentToken
+      },
+      body: JSON.stringify({
+        receiver: currentContact,
+        content: message
+      })
+    }).then(response => {
+      if (!response.ok) {
+        response.text().then(text => {
+          showMessage(`发送失败: ${text}`);
+        });
+      }
+    }).catch(error => {
+      showMessage(`发送失败: ${error.message}`);
+    });
+
+    messageInput.value = '';
+  }
+
+  function showMessage(message) {
+    const messagesDiv = document.getElementById('messages');
+    const messageElement = document.createElement('div');
+    messageElement.className = 'message system';
+    messageElement.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+    messagesDiv.appendChild(messageElement);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function addContact() {
+    const newContactInput = document.getElementById('newContactInput');
+    const newContact = newContactInput.value.trim();
+    
+    if (!newContact) {
+      alert('请输入联系人用户名');
+      return;
+    }
+
+    // 检查是否已存在
+    if (recentContacts.has(newContact)) {
+      alert('该联系人已在列表中');
+      return;
+    }
+
+    // 创建新Map以保持不可变性
+    const newRecentContacts = new Map(recentContacts);
+    newRecentContacts.set(newContact, []);
+    recentContacts = newRecentContacts;
+
+    renderContactList();
+    newContactInput.value = '';
+    showMessage(`已添加联系人: ${newContact}`);
+    
+    // 添加后自动滚动到底部
+    const contactList = document.getElementById('contactList');
+    contactList.scrollTop = contactList.scrollHeight;
+    
+    // 新增：调用后端接口同步联系人到Redis
+    fetch('/api/messages/addContact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + currentToken
+      },
+      body: JSON.stringify({
+        contactUsername: newContact
+      })
+    }).then(response => {
+      if (!response.ok) {
+        showMessage(`联系人同步失败: ${response.statusText}`);
+      }
+    }).catch(error => {
+      showMessage(`联系人同步错误: ${error.message}`);
+    });
+  }
+
+  function deleteContact(contact) {
+    if (!currentToken) {
+      alert('请先登录');
+      return;
+    }
+
+    fetch('/api/messages/deleteContacts', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + currentToken
+      },
+      body: JSON.stringify({
+        contactUsername: contact
+      })
+    }).then(response => {
+      if (response.ok) {
+        // 创建新Map确保数据一致性
+        const newRecentContacts = new Map(recentContacts);
+        newRecentContacts.delete(contact);
+        recentContacts = newRecentContacts;
+        renderContactList();
+        showMessage(`已删除联系人: ${contact}`);
+        
+        if (currentContact === contact) {
+          currentContact = null;
+          document.getElementById('messages').innerHTML = '';
+        }
+      } else {
+        response.json().then(data => {
+          showMessage(`删除失败: ${data.error || '未知错误'}`);
+        });
+      }
+    }).catch(error => {
+      showMessage(`删除失败: ${error.message}`);
+    });
+  }
+
+  function autoLogin() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (!token) {
+      showMessage('没有找到token，请提供有效的token进行登录');
+      return;
+    }
+    
+    fetch('/api/user/websocket/authbypassword', { // 假设后端有专门的token登录接口
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        token: token
+      })
+    }).then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error('自动登录失败');
+    }).then(data => {
+      if (data.accessToken) {
+        currentToken = data.accessToken;
+        
+        // 解析token并设置当前用户
+        const userInfo = getUserInfoFromToken(currentToken);
+        currentUser = userInfo.username;
+        
+        recentContacts = new Map();
+        if (data.recentMessages) {
+          try {
+            if (data.recentMessages instanceof Array) {
+              data.recentMessages.forEach(msg => {
+                if (!recentContacts.has(msg.sender)) {
+                  recentContacts.set(msg.sender, []);
+                }
+                msg.read = true;
+                recentContacts.get(msg.sender).push(msg);
+              });
+            } else {
+              Object.entries(data.recentMessages).forEach(([contact, messages]) => {
+                recentContacts.set(contact, Array.isArray(messages) ? messages.map(msg => {
+                  msg.read = true;
+                  return msg;
+                }) : []);
+              });
+            }
+          } catch (e) {
+            console.error('消息数据解析失败:', e);
+          }
+        }
+        renderContactList();
+
+        showMessage(`自动登录成功：欢迎 ${userInfo.username}`);
+        
+        // 显示聊天区域，隐藏登录区域
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('chatSection').style.display = 'block';
+        
+        // 登录成功后自动连接WebSocket
+        connect();
+      } else {
+        throw new Error('响应中未包含accessToken');
+      }
+    }).catch(error => {
+      showMessage('自动登录失败: ' + error.message);
+    });
+  }
+
+  // 初始化时添加拖放区域监听
+  document.addEventListener('DOMContentLoaded', () => {
+    const contactList = document.getElementById('contactList');
+    contactList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+    
+    // 自动登录
+    autoLogin();
+  });
+</script>
+</body>
+</html>
